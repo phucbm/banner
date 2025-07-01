@@ -1,26 +1,42 @@
-/**
- * A TypeScript utility package
- */
+import {readFileSync} from 'fs';
 
-/**
- * Example utility function
- * @param input - The input parameter
- * @returns The processed result
- */
-export function myUtilityFunction(input?: any): any {
-    // TODO: Implement your function here
-    return input;
+interface PackageJson {
+    name: string;
+    version: string;
+    homepage?: string;
+    license?: string;
+    author?: {
+        name: string;
+        url?: string;
+    };
 }
 
 /**
- * Another example function that works with DOM elements
- * @param element - HTML element to process
- * @returns Modified element or result
+ * Reads package.json and generates a banner string
+ * @param input - Either a path to package.json file or a package.json object
+ * @returns Banner string formatted for JavaScript files
  */
-export function processElement(element: HTMLElement): HTMLElement {
-    // TODO: Implement your DOM manipulation here
-    return element;
-}
+export function generateBanner(input: string | PackageJson = './package.json'): string {
+    try {
+        let pkg: PackageJson;
 
-// Default export
-export default myUtilityFunction;
+        if (typeof input === 'string') {
+            // Read from file path
+            const packageJsonContent = readFileSync(input, 'utf-8');
+            pkg = JSON.parse(packageJsonContent);
+        } else {
+            // Use provided object
+            pkg = input;
+        }
+
+        const banner = `/*!
+ * ${pkg.name} ${pkg.version}
+ * ${pkg.homepage || ''}
+ *${pkg.license ? `\n * @license ${pkg.license}` : ''}${pkg.author?.name ? `\n * @author: ${pkg.author.name}${pkg.author.url ? `, ${pkg.author.url}` : ''}` : ''}
+ */`;
+
+        return banner;
+    } catch (error) {
+        throw new Error(`Failed to generate banner: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}

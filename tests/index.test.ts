@@ -1,89 +1,220 @@
-import {myUtilityFunction, processElement} from '../src';
+import {generateBanner} from '../src';
+import {readFileSync} from 'fs';
 
-describe('banner', () => {
-    // Clean up DOM after each test
-    afterEach(() => {
-        document.body.innerHTML = '';
+// Mock fs module for testing
+jest.mock('fs');
+const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+
+describe('generateBanner', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
     });
 
-    describe('myUtilityFunction', () => {
-        test('should return the input parameter', () => {
-            const input = 'test';
-            const result = myUtilityFunction(input);
-            expect(result).toBe(input);
+    describe('with file path input', () => {
+        it('should generate banner from default package.json path', () => {
+            const mockPackageJson = {
+                name: 'test-package',
+                version: '1.0.0',
+                homepage: 'https://example.com',
+                license: 'MIT',
+                author: {
+                    name: 'John Doe',
+                    url: 'https://johndoe.com'
+                }
+            };
+
+            mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
+
+            const result = generateBanner();
+
+            expect(mockReadFileSync).toHaveBeenCalledWith('./package.json', 'utf-8');
+            expect(result).toBe(`/*!
+ * test-package 1.0.0
+ * https://example.com
+ *
+ * @license MIT
+ * @author: John Doe, https://johndoe.com
+ */`);
         });
 
-        test('should handle undefined input', () => {
-            const result = myUtilityFunction();
-            expect(result).toBeUndefined();
+        it('should generate banner from custom file path', () => {
+            const mockPackageJson = {
+                name: 'custom-package',
+                version: '2.0.0',
+                homepage: 'https://custom.com',
+                license: 'Apache-2.0',
+                author: {
+                    name: 'Jane Smith'
+                }
+            };
+
+            mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
+
+            const result = generateBanner('./custom/package.json');
+
+            expect(mockReadFileSync).toHaveBeenCalledWith('./custom/package.json', 'utf-8');
+            expect(result).toBe(`/*!
+ * custom-package 2.0.0
+ * https://custom.com
+ *
+ * @license Apache-2.0
+ * @author: Jane Smith
+ */`);
         });
 
-        test('should handle different data types', () => {
-            expect(myUtilityFunction(42)).toBe(42);
-            expect(myUtilityFunction(true)).toBe(true);
-            expect(myUtilityFunction(null)).toBe(null);
-            expect(myUtilityFunction({})).toEqual({});
+        it('should handle missing optional fields gracefully', () => {
+            const mockPackageJson = {
+                name: 'minimal-package',
+                version: '1.0.0'
+            };
+
+            mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
+
+            const result = generateBanner();
+
+            expect(result).toContain('minimal-package 1.0.0');
+            expect(result).toMatch(/^\/\*!/);
+            expect(result).toMatch(/\*\/$/);
+        });
+
+        it('should handle author without URL', () => {
+            const mockPackageJson = {
+                name: 'no-url-package',
+                version: '1.0.0',
+                license: 'MIT',
+                author: {
+                    name: 'Author Name'
+                }
+            };
+
+            mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
+
+            const result = generateBanner();
+
+            expect(result).toBe(`/*!
+ * no-url-package 1.0.0
+ * 
+ *
+ * @license MIT
+ * @author: Author Name
+ */`);
+        });
+
+        it('should throw error when file cannot be read', () => {
+            mockReadFileSync.mockImplementation(() => {
+                throw new Error('File not found');
+            });
+
+            expect(() => generateBanner('./nonexistent.json')).toThrow('Failed to generate banner: File not found');
+        });
+
+        it('should throw error when JSON is invalid', () => {
+            mockReadFileSync.mockReturnValue('invalid json');
+
+            expect(() => generateBanner()).toThrow('Failed to generate banner:');
         });
     });
 
-    describe('processElement', () => {
-        test('should work with HTML elements', () => {
-            const testElement = document.createElement('div');
-            testElement.id = 'test-element';
-            testElement.textContent = 'Test content';
-            document.body.appendChild(testElement);
+    describe('with package object input', () => {
+        it('should generate banner from package object with all fields', () => {
+            const packageObj = {
+                name: 'object-package',
+                version: '3.0.0',
+                homepage: 'https://object.com',
+                license: 'BSD-3-Clause',
+                author: {
+                    name: 'Object Author',
+                    url: 'https://objectauthor.com'
+                }
+            };
 
-            const result = processElement(testElement);
+            const result = generateBanner(packageObj);
 
-            expect(result).toBe(testElement);
-            expect(testElement.textContent).toBe('Test content');
+            expect(result).toBe(`/*!
+ * object-package 3.0.0
+ * https://object.com
+ *
+ * @license BSD-3-Clause
+ * @author: Object Author, https://objectauthor.com
+ */`);
         });
 
-        test('should handle DOM manipulation', () => {
-            const container = document.createElement('div');
-            const child1 = document.createElement('span');
-            const child2 = document.createElement('span');
+        it('should generate banner from minimal package object', () => {
+            const packageObj = {
+                name: 'minimal-object',
+                version: '1.0.0'
+            };
 
-            child1.textContent = 'Child 1';
-            child2.textContent = 'Child 2';
+            const result = generateBanner(packageObj);
 
-            container.appendChild(child1);
-            container.appendChild(child2);
-            document.body.appendChild(container);
-
-            // Test DOM queries
-            const children = container.querySelectorAll('span');
-            expect(children.length).toBe(2);
-            expect(children[0].textContent).toBe('Child 1');
-            expect(children[1].textContent).toBe('Child 2');
+            expect(result).toContain('minimal-object 1.0.0');
+            expect(result).toMatch(/^\/\*!/);
+            expect(result).toMatch(/\*\/$/);
         });
 
-        test('should handle events', () => {
-            const button = document.createElement('button');
-            button.textContent = 'Click me';
-            document.body.appendChild(button);
+        it('should handle package object with only license', () => {
+            const packageObj = {
+                name: 'license-only',
+                version: '1.0.0',
+                license: 'GPL-3.0'
+            };
 
-            const mockCallback = jest.fn();
-            button.addEventListener('click', mockCallback);
+            const result = generateBanner(packageObj);
 
-            // Simulate click
-            button.click();
-
-            expect(mockCallback).toHaveBeenCalledTimes(1);
+            expect(result).toBe(`/*!
+ * license-only 1.0.0
+ * 
+ *
+ * @license GPL-3.0
+ */`);
         });
 
-        test('should work with CSS styles', () => {
-            const element = document.createElement('div');
-            document.body.appendChild(element);
+        it('should handle package object with only author', () => {
+            const packageObj = {
+                name: 'author-only',
+                version: '1.0.0',
+                author: {
+                    name: 'Solo Author',
+                    url: 'https://solo.com'
+                }
+            };
 
-            // Test style manipulation
-            element.style.width = '100px';
-            element.style.height = '50px';
-            element.style.backgroundColor = 'red';
+            const result = generateBanner(packageObj);
 
-            expect(element.style.width).toBe('100px');
-            expect(element.style.height).toBe('50px');
-            expect(element.style.backgroundColor).toBe('red');
+            expect(result).toBe(`/*!
+ * author-only 1.0.0
+ * 
+ *
+ * @author: Solo Author, https://solo.com
+ */`);
+        });
+    });
+
+    describe('edge cases', () => {
+        it('should handle various input scenarios', () => {
+            // Test with empty homepage
+            const result1 = generateBanner({
+                name: 'test-package',
+                version: '1.0.0',
+                homepage: ''
+            });
+            expect(result1).toContain('test-package 1.0.0');
+
+            // Test with empty license
+            const result2 = generateBanner({
+                name: 'test-package',
+                version: '1.0.0',
+                license: ''
+            });
+            expect(result2).toContain('test-package 1.0.0');
+
+            // Test with empty author name
+            const result3 = generateBanner({
+                name: 'test-package',
+                version: '1.0.0',
+                author: {name: '', url: 'https://example.com'}
+            });
+            expect(result3).toContain('test-package 1.0.0');
         });
     });
 });
