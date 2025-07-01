@@ -2,6 +2,7 @@
 
 A TypeScript utility for generating JavaScript banner comments from package.json data
 
+[![Publish on Release](https://github.com/phucbm/banner/actions/workflows/publish.yml/badge.svg)](https://github.com/phucbm/banner/actions/workflows/publish.yml)
 [![npm version](https://badgen.net/npm/v/@phucbm/banner?icon=npm)](https://www.npmjs.com/package/@phucbm/banner)
 [![npm downloads](https://badgen.net/npm/dm/@phucbm/banner?icon=npm)](https://www.npmjs.com/package/@phucbm/banner)
 [![npm dependents](https://badgen.net/npm/dependents/@phucbm/banner?icon=npm)](https://www.npmjs.com/package/@phucbm/banner)
