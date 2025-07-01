@@ -15,7 +15,7 @@ export default defineConfig([
         outDir: 'dist',
         format: ['esm'],
         target: 'es2020',
-        platform: 'neutral',
+        platform: 'node',
         bundle: true,
         minify: false,
         sourcemap: true,
