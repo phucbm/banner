@@ -1,9 +1,9 @@
 /*!
- * @phucbm/banner v0.0.1
- * A TypeScript utility package
+ * @phucbm/banner 0.0.2
+ * https://github.com/phucbm/banner#readme
+ *
  * @license MIT
  */
-
 
 // src/index.ts
 import { readFileSync } from "fs";
