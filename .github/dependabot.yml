@@ -8,7 +8,8 @@ updates:
     directory: "/"
     # Check the npm registry for updates every day (weekdays)
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "saturday"
       time: "06:00"
       timezone: "Asia/Ho_Chi_Minh"  # GMT+7 (Hanoi/Vietnam timezone)
 
@@ -29,16 +30,3 @@ updates:
         update-types:
           - "minor"
           - "patch"
-
-  # Enable version updates for GitHub Actions
-  - package-ecosystem: "github-actions"
-    # Workflow files stored in the default location of `.github/workflows`
-    directory: "/"
-    schedule:
-      interval: "weekly"
-
-    # Group all GitHub Actions updates into one PR
-    groups:
-      github-actions:
-        patterns:
-          - "*"
